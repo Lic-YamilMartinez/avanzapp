@@ -9,7 +9,7 @@ public class AvanzappApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(AvanzappApplication.class, args);
-		System.out.print("El servidor ON");
+		System.out.println("El servidor ON");
 		System.out.println("Listo para GITFLOW");
 		System.out.println("Version 1.0 Prueba OK");
 	}

@@ -24,7 +24,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults()) // Habilitar CORS
                 .csrf(csrf -> csrf.disable())    // Desactivar CSRF
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/api/usuarios/**").permitAll()
+                        .requestMatchers("/auth/login", "/api/usuarios/**", "/dnit/import").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
@@ -34,15 +34,20 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8081"));
+
+        // 👇 Usá esto en vez de setAllowedOrigins cuando allowCredentials = true
+        configuration.setAllowedOriginPatterns(List.of("*")); // Permite cualquier origen en desarrollo
+
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(true); // Porque estás usando cookies o JWT en headers
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
+
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
