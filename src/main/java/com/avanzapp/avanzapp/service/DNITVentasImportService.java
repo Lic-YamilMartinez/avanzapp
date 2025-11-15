@@ -3,7 +3,6 @@ package com.avanzapp.avanzapp.service;
 import com.avanzapp.avanzapp.dto.ImportResultDTO;
 import com.avanzapp.avanzapp.model.DNITVentasCabecera;
 import com.avanzapp.avanzapp.model.DNITVentasDetalle;
-import com.avanzapp.avanzapp.model.LineaTipo;
 import com.avanzapp.avanzapp.model.Usuario;
 import com.avanzapp.avanzapp.repository.DNITVentasCabeceraRepository;
 import com.avanzapp.avanzapp.repository.UsuarioRepository;
@@ -13,186 +12,193 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class DNITVentasImportService {
 
-    private static final Pattern MES_PATTERN = Pattern.compile("MES\\s*(DE|:)\\s*([A-Z]+)");
-    private static final Pattern ANIO_PATTERN = Pattern.compile("A(?:N|\\u00D1)O\\s*[:=]?\\s*(20\\d{2})");
-    private static final Map<String, Integer> MONTHS = Map.ofEntries(
-            Map.entry("ENERO", 1), Map.entry("FEBRERO", 2), Map.entry("MARZO", 3), Map.entry("ABRIL", 4),
-            Map.entry("MAYO", 5), Map.entry("JUNIO", 6), Map.entry("JULIO", 7), Map.entry("AGOSTO", 8),
-            Map.entry("SEPTIEMBRE", 9), Map.entry("SETIEMBRE", 9), Map.entry("OCTUBRE", 10),
-            Map.entry("NOVIEMBRE", 11), Map.entry("DICIEMBRE", 12),
-            Map.entry("ENE", 1), Map.entry("FEB", 2), Map.entry("MAR", 3), Map.entry("ABR", 4),
-            Map.entry("MAY", 5), Map.entry("JUN", 6), Map.entry("JUL", 7), Map.entry("AGO", 8),
-            Map.entry("SEP", 9), Map.entry("SET", 9), Map.entry("OCT", 10), Map.entry("NOV", 11), Map.entry("DIC", 12)
-    );
+    private static final int MIN_COLUMNS = 10;
 
     private final DNITVentasCabeceraRepository cabeceraRepository;
     private final UsuarioRepository usuarioRepository;
+    private final DNITVentasCsvReader csvReader;
+    private final DNITVentasPeriodDetector periodDetector;
+    private final DNITVentasDetalleFactory detalleFactory;
 
     public DNITVentasImportService(DNITVentasCabeceraRepository cabeceraRepository,
-                                   UsuarioRepository usuarioRepository) {
+                                   UsuarioRepository usuarioRepository,
+                                   DNITVentasCsvReader csvReader,
+                                   DNITVentasPeriodDetector periodDetector,
+                                   DNITVentasDetalleFactory detalleFactory) {
         this.cabeceraRepository = cabeceraRepository;
         this.usuarioRepository = usuarioRepository;
+        this.csvReader = csvReader;
+        this.periodDetector = periodDetector;
+        this.detalleFactory = detalleFactory;
     }
 
     @Transactional
     public ImportResultDTO importarVentas(MultipartFile file, Long usuarioId, boolean overwrite) throws IOException {
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("El archivo de ventas esta vacio");
-        }
+        validateFile(file);
 
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado: " + usuarioId));
 
-        List<String> lines = readLines(file);
+        List<String> lines = csvReader.readLines(file);
         if (lines.isEmpty()) {
             throw new IllegalArgumentException("No se pudo leer informacion del archivo de ventas");
         }
 
-        YearMonth periodo = detectarPeriodo(lines, file.getOriginalFilename());
+        YearMonth periodo = periodDetector.detect(lines, file.getOriginalFilename());
         int periodoMes = periodo.getMonthValue();
         int periodoAnio = periodo.getYear();
         String periodoEmision = String.format("%02d/%d", periodoMes, periodoAnio);
 
-        if (overwrite) {
-            List<DNITVentasCabecera> existentes = cabeceraRepository
-                    .findByUsuarioIdAndPeriodoMesAndPeriodoAnio(usuarioId, periodoMes, periodoAnio);
-            if (!existentes.isEmpty()) {
-                cabeceraRepository.deleteAll(existentes);
-            }
-        }
+        borrarRegistrosPreviosIfNeeded(overwrite, usuarioId, periodoMes, periodoAnio);
 
-        int headerIndex = encontrarLineaHeader(lines);
-        int insertadas = 0;
-        int actualizadas = 0;
-        int ignoradas = 0;
-        int leidas = 0;
-        YearMonth periodoRef = YearMonth.of(periodoAnio, periodoMes);
+        int headerIndex = csvReader.findHeaderIndex(lines);
+        ImportCounters counters = new ImportCounters();
+        YearMonth periodoReferencia = YearMonth.of(periodoAnio, periodoMes);
 
         for (int i = headerIndex + 1; i < lines.size(); i++) {
             String row = lines.get(i);
-            if (row == null || row.isBlank()) {
-                continue;
-            }
-            String trimmed = row.trim();
-            String normalized = normalizeText(trimmed);
-            if (normalized.startsWith("RESUMEN") || normalized.startsWith(";RESUMEN")) {
-                break;
-            }
-            if (trimmed.startsWith(";") && !startsWithDigit(trimmed)) {
+            if (!isProcessableRow(row, csvReader)) {
+                if (shouldStopProcessing(row, csvReader)) {
+                    break;
+                }
                 continue;
             }
 
             String[] columns = row.split(";", -1);
-            if (columns.length < 10) {
+            if (columns.length < MIN_COLUMNS) {
                 continue;
             }
 
-            Integer dia = parseInteger(columns[0]);
-            String numero = normalizeNumero(getColumn(columns, 1));
-
-            if (numero == null) {
-                ignoradas++;
+            Optional<VentaRow> maybeRow = parseVentaRow(columns);
+            if (maybeRow.isEmpty()) {
+                counters.ignorar();
                 continue;
             }
 
-            leidas++;
+            counters.leer();
 
+            VentaRow data = maybeRow.get();
             DNITVentasCabecera cabecera = cabeceraRepository
-                    .findFirstByUsuarioIdAndPeriodoMesAndPeriodoAnioAndNumeroComprobante(usuarioId, periodoMes, periodoAnio, numero)
-                    .orElse(null);
+                    .findFirstByUsuarioIdAndPeriodoMesAndPeriodoAnioAndNumeroComprobante(usuarioId, periodoMes, periodoAnio, data.numero)
+                    .orElseGet(DNITVentasCabecera::new);
 
-            boolean esNueva = cabecera == null;
-            if (cabecera == null) {
-                cabecera = new DNITVentasCabecera();
-            }
+            boolean esNueva = cabecera.getId() == null;
+            actualizarCabecera(cabecera, usuario, periodoEmision, periodoReferencia, data, periodoMes, periodoAnio);
 
-                cabecera.setUsuario(usuario);
-                cabecera.setDia(dia);
-                cabecera.setNumeroComprobante(numero);
-                cabecera.setClienteNombre(sanitizeText(getColumn(columns, 2)));
-                cabecera.setClienteRuc(sanitizeText(getColumn(columns, 3)));
+            List<DNITVentasDetalle> detalles = detalleFactory.build(
+                    data.gravada10,
+                    data.gravada5,
+                    data.iva10,
+                    data.iva5,
+                    data.exenta,
+                    data.afectacionExento,
+                    data.afectacionGrav10,
+                    data.afectacionGrav5
+            );
+            cabecera.clearAndAddDetalles(detalles);
 
-                BigDecimal grav10 = parseMoney(getColumn(columns, 4));
-                BigDecimal grav5 = parseMoney(getColumn(columns, 5));
-                BigDecimal iva10 = parseMoney(getColumn(columns, 6));
-                BigDecimal iva5 = parseMoney(getColumn(columns, 7));
-                BigDecimal exenta = parseMoney(getColumn(columns, 8));
-
-                cabecera.setGravada10(grav10);
-                cabecera.setGravada5(grav5);
-                cabecera.setIva10(iva10);
-                cabecera.setIva5(iva5);
-                cabecera.setExenta(exenta);
-                cabecera.setTotalComprobante(parseMoney(getColumn(columns, 9)));
-                cabecera.setRetenciones(parseMoney(getColumn(columns, 10)));
-
-                cabecera.setAfectacionExento(sanitizeText(getColumn(columns, 11)));
-                cabecera.setAfectacionGrav10(sanitizeText(getColumn(columns, 12)));
-                cabecera.setAfectacionGrav5(sanitizeText(getColumn(columns, 13)));
-
-            cabecera.setPeriodoMes(periodoMes);
-            cabecera.setPeriodoAnio(periodoAnio);
-            cabecera.setPeriodoEmision(periodoEmision);
-            cabecera.setFechaEmision(buildFecha(periodoRef, dia));
-
-                List<DNITVentasDetalle> nuevos = new ArrayList<>();
-
-                if (gtZero(grav10) || gtZero(iva10)) {
-                    DNITVentasDetalle detalle10 = new DNITVentasDetalle();
-                    detalle10.setTipoLinea(LineaTipo.IVA10);
-                    detalle10.setTasa(10);
-                    detalle10.setBase(safe(grav10));
-                    detalle10.setIva(safe(iva10));
-                    detalle10.setExento(BigDecimal.ZERO);
-                    detalle10.setClasificacion(cabecera.getAfectacionGrav10());
-                    nuevos.add(detalle10);
-                }
-
-                if (gtZero(grav5) || gtZero(iva5)) {
-                    DNITVentasDetalle detalle5 = new DNITVentasDetalle();
-                    detalle5.setTipoLinea(LineaTipo.IVA5);
-                    detalle5.setTasa(5);
-                    detalle5.setBase(safe(grav5));
-                    detalle5.setIva(safe(iva5));
-                    detalle5.setExento(BigDecimal.ZERO);
-                    detalle5.setClasificacion(cabecera.getAfectacionGrav5());
-                    nuevos.add(detalle5);
-                }
-
-                if (gtZero(exenta)) {
-                    DNITVentasDetalle detalleExento = new DNITVentasDetalle();
-                    detalleExento.setTipoLinea(LineaTipo.EXENTA);
-                    detalleExento.setTasa(0);
-                    detalleExento.setBase(BigDecimal.ZERO);
-                    detalleExento.setIva(BigDecimal.ZERO);
-                    detalleExento.setExento(safe(exenta));
-                    detalleExento.setClasificacion(cabecera.getAfectacionExento());
-                    nuevos.add(detalleExento);
-                }
-
-                cabecera.clearAndAddDetalles(nuevos);
-
-                cabeceraRepository.save(cabecera);
-            if (esNueva) {
-                insertadas++;
-            } else {
-                actualizadas++;
-            }
+            cabeceraRepository.save(cabecera);
+            counters.registrarResultado(esNueva);
         }
 
-        return new ImportResultDTO(leidas, insertadas, actualizadas, ignoradas, periodoMes, periodoAnio);
+        return counters.toResult(periodoMes, periodoAnio);
+    }
+
+    private void validateFile(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("El archivo de ventas esta vacio");
+        }
+    }
+
+    private void borrarRegistrosPreviosIfNeeded(boolean overwrite, Long usuarioId, int periodoMes, int periodoAnio) {
+        if (!overwrite) {
+            return;
+        }
+        List<DNITVentasCabecera> existentes = cabeceraRepository
+                .findByUsuarioIdAndPeriodoMesAndPeriodoAnio(usuarioId, periodoMes, periodoAnio);
+        if (!existentes.isEmpty()) {
+            cabeceraRepository.deleteAll(existentes);
+        }
+    }
+
+    private boolean isProcessableRow(String row, DNITVentasCsvReader reader) {
+        if (row == null || row.isBlank()) {
+            return false;
+        }
+        String trimmed = row.trim();
+        return !reader.shouldSkip(trimmed);
+    }
+
+    private boolean shouldStopProcessing(String row, DNITVentasCsvReader reader) {
+        if (row == null || row.isBlank()) {
+            return false;
+        }
+        String normalized = DNITVentasParsingUtils.normalizeText(row.trim());
+        return reader.shouldStop(normalized);
+    }
+
+    private Optional<VentaRow> parseVentaRow(String[] columns) {
+        Integer dia = DNITVentasParsingUtils.parseInteger(columns[0]);
+        String numero = DNITVentasParsingUtils.normalizeNumero(getColumn(columns, 1));
+        if (numero == null) {
+            return Optional.empty();
+        }
+        VentaRow row = new VentaRow(
+                dia,
+                numero,
+                DNITVentasParsingUtils.sanitizeText(getColumn(columns, 2)),
+                DNITVentasParsingUtils.sanitizeText(getColumn(columns, 3)),
+                DNITVentasParsingUtils.parseMoney(getColumn(columns, 4)),
+                DNITVentasParsingUtils.parseMoney(getColumn(columns, 5)),
+                DNITVentasParsingUtils.parseMoney(getColumn(columns, 6)),
+                DNITVentasParsingUtils.parseMoney(getColumn(columns, 7)),
+                DNITVentasParsingUtils.parseMoney(getColumn(columns, 8)),
+                DNITVentasParsingUtils.parseMoney(getColumn(columns, 9)),
+                DNITVentasParsingUtils.parseMoney(getColumn(columns, 10)),
+                DNITVentasParsingUtils.sanitizeText(getColumn(columns, 11)),
+                DNITVentasParsingUtils.sanitizeText(getColumn(columns, 12)),
+                DNITVentasParsingUtils.sanitizeText(getColumn(columns, 13))
+        );
+        return Optional.of(row);
+    }
+
+    private void actualizarCabecera(DNITVentasCabecera cabecera,
+                                    Usuario usuario,
+                                    String periodoEmision,
+                                    YearMonth periodoRef,
+                                    VentaRow data,
+                                    int periodoMes,
+                                    int periodoAnio) {
+        cabecera.setUsuario(usuario);
+        cabecera.setDia(data.dia);
+        cabecera.setNumeroComprobante(data.numero);
+        cabecera.setClienteNombre(data.clienteNombre);
+        cabecera.setClienteRuc(data.clienteRuc);
+
+        cabecera.setGravada10(data.gravada10);
+        cabecera.setGravada5(data.gravada5);
+        cabecera.setIva10(data.iva10);
+        cabecera.setIva5(data.iva5);
+        cabecera.setExenta(data.exenta);
+        cabecera.setTotalComprobante(data.totalComprobante);
+        cabecera.setRetenciones(data.retenciones);
+
+        cabecera.setAfectacionExento(data.afectacionExento);
+        cabecera.setAfectacionGrav10(data.afectacionGrav10);
+        cabecera.setAfectacionGrav5(data.afectacionGrav5);
+
+        cabecera.setPeriodoMes(periodoMes);
+        cabecera.setPeriodoAnio(periodoAnio);
+        cabecera.setPeriodoEmision(periodoEmision);
+        cabecera.setFechaEmision(buildFecha(periodoRef, data.dia));
     }
 
     private static LocalDate buildFecha(YearMonth periodo, Integer dia) {
@@ -212,163 +218,48 @@ public class DNITVentasImportService {
         return index < columns.length ? columns[index] : "";
     }
 
-    private static Integer parseInteger(String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
-        if (trimmed.isEmpty()) {
-            return null;
-        }
-        try {
-            return Integer.parseInt(trimmed);
-        } catch (NumberFormatException ignored) {
-            return null;
-        }
+    private record VentaRow(
+            Integer dia,
+            String numero,
+            String clienteNombre,
+            String clienteRuc,
+            BigDecimal gravada10,
+            BigDecimal gravada5,
+            BigDecimal iva10,
+            BigDecimal iva5,
+            BigDecimal exenta,
+            BigDecimal totalComprobante,
+            BigDecimal retenciones,
+            String afectacionExento,
+            String afectacionGrav10,
+            String afectacionGrav5
+    ) {
     }
 
-    private static String normalizeNumero(String value) {
-        if (value == null) {
-            return null;
+    private static class ImportCounters {
+        private int insertadas;
+        private int actualizadas;
+        private int ignoradas;
+        private int leidas;
+
+        void leer() {
+            leidas++;
         }
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
 
-    private static BigDecimal parseMoney(String value) {
-        if (value == null) {
-            return BigDecimal.ZERO;
+        void ignorar() {
+            ignoradas++;
         }
-        String trimmed = value.replace("Gs", "")
-                .replace("GS", "")
-                .replace(".", "")
-                .replace(" ", "")
-                .replace(",", ".")
-                .trim();
-        if (trimmed.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-        try {
-            return new BigDecimal(trimmed);
-        } catch (NumberFormatException ex) {
-            return BigDecimal.ZERO;
-        }
-    }
 
-    private static String sanitizeText(String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.replace('\u00A0', ' ').trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
-    private static boolean gtZero(BigDecimal value) {
-        return value != null && value.compareTo(BigDecimal.ZERO) > 0;
-    }
-
-    private static BigDecimal safe(BigDecimal value) {
-        return value == null ? BigDecimal.ZERO : value;
-    }
-
-    private static List<String> readLines(MultipartFile file) throws IOException {
-        byte[] bytes = file.getBytes();
-        String utf8 = new String(bytes, StandardCharsets.UTF_8);
-        String content = utf8.indexOf('\uFFFD') >= 0
-                ? new String(bytes, Charset.forName("windows-1252"))
-                : utf8;
-        String[] split = content.replace("\r", "").split("\n");
-        List<String> lines = new ArrayList<>(split.length);
-        for (String line : split) {
-            lines.add(line.replace("\uFEFF", ""));
-        }
-        return lines;
-    }
-
-    private static YearMonth detectarPeriodo(List<String> lines, String fileName) {
-        Integer mes = null;
-        Integer anio = null;
-
-        for (String line : lines) {
-            String normalized = normalizeText(line);
-            if (mes == null) {
-                mes = buscarMes(normalized);
-            }
-            if (anio == null) {
-                anio = buscarAnio(normalized);
-            }
-            if (mes != null && anio != null) {
-                break;
+        void registrarResultado(boolean esNueva) {
+            if (esNueva) {
+                insertadas++;
+            } else {
+                actualizadas++;
             }
         }
 
-        if (mes == null && fileName != null) {
-            mes = buscarMes(normalizeText(fileName));
+        ImportResultDTO toResult(int periodoMes, int periodoAnio) {
+            return new ImportResultDTO(leidas, insertadas, actualizadas, ignoradas, periodoMes, periodoAnio);
         }
-        if (anio == null && fileName != null) {
-            anio = buscarAnio(normalizeText(fileName));
-        }
-
-        if (mes == null || anio == null) {
-            throw new IllegalStateException("No se pudo determinar el periodo del archivo de ventas");
-        }
-
-        return YearMonth.of(anio, mes);
-    }
-
-    private static Integer buscarMes(String text) {
-        Matcher matcher = MES_PATTERN.matcher(text);
-        if (matcher.find()) {
-            return MONTHS.get(matcher.group(2));
-        }
-        for (String token : text.split("[;\\s]+")) {
-            Integer month = MONTHS.get(token);
-            if (month != null) {
-                return month;
-            }
-        }
-        return null;
-    }
-
-    private static Integer buscarAnio(String text) {
-        Matcher matcher = ANIO_PATTERN.matcher(text);
-        if (matcher.find()) {
-            return Integer.parseInt(matcher.group(1));
-        }
-        for (String token : text.split("[;\\s]+")) {
-            if (token.matches("20\\d{2}")) {
-                return Integer.parseInt(token);
-            }
-        }
-        return null;
-    }
-
-    private static String normalizeText(String input) {
-        if (input == null) {
-            return "";
-        }
-        String normalized = Normalizer.normalize(input, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "")
-                .replace('\u00A0', ' ')
-                .toUpperCase(Locale.ROOT);
-        return normalized.trim();
-    }
-
-    private static boolean startsWithDigit(String text) {
-        if (text == null || text.isEmpty()) {
-            return false;
-        }
-        char first = text.charAt(0);
-        return Character.isDigit(first);
-    }
-
-    private static int encontrarLineaHeader(List<String> lines) {
-        for (int i = 0; i < lines.size(); i++) {
-            String normalized = normalizeText(lines.get(i));
-            if (normalized.startsWith("DIA;NUMERO")) {
-                return i;
-            }
-        }
-        throw new IllegalStateException("No se encontro la fila de encabezados de ventas");
     }
 }
