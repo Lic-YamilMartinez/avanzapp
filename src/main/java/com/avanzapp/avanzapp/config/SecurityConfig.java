@@ -24,7 +24,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults()) // Habilitar CORS
                 .csrf(csrf -> csrf.disable())    // Desactivar CSRF
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/api/usuarios/**", "/dnit/import").permitAll()
+                        .requestMatchers("/auth/login", "/usuarios/**", "/dnit/import").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
