@@ -1,0 +1,251 @@
+{
+  "info": {
+    "_postman_id": "e8a2cc5d-e49b-4a8a-9f4f-000000000001",
+    "name": "Avanzapp DNIT & Ventas",
+    "description": "Colección para probar el flujo completo: creación de usuario, login, obtención de datos y carga de archivos DNIT y Ventas.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Crear Usuario",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Usuario creado\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const res = pm.response.json();",
+              "pm.collectionVariables.set(\"usuarioId\", res.id);",
+              "pm.collectionVariables.set(\"email\", res.email);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"{{nuevoNombre}}\",\n  \"apellido\": \"{{nuevoApellido}}\",\n  \"email\": \"{{nuevoEmail}}\",\n  \"telefono\": \"+595900000\",\n  \"documento\": \"1234567\",\n  \"pais\": \"PY\",\n  \"departamento\": \"Central\",\n  \"ciudad\": \"Asuncion\",\n  \"direccion\": \"Calle Falsa 123\",\n  \"tipoCliente\": \"EMPRESA\",\n  \"rol\": \"CLIENT\",\n  \"password\": \"{{nuevoPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/usuarios",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "usuarios"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "02 - Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Login exitoso\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const res = pm.response.json();",
+              "pm.collectionVariables.set(\"token\", res.token);",
+              "pm.collectionVariables.set(\"usuarioEmail\", res.email);",
+              "pm.collectionVariables.set(\"usuarioNombre\", res.nombre);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"{{password}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "03 - Usuarios /me",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/usuarios/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "usuarios",
+            "me"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "04 - DNIT Import",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "{{dnitFile}}"
+            },
+            {
+              "key": "usuarioId",
+              "value": "{{usuarioId}}",
+              "type": "text"
+            },
+            {
+              "key": "overwrite",
+              "value": "true",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/dnit/import",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dnit",
+            "import"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "05 - Ventas Import",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "{{ventasFile}}"
+            },
+            {
+              "key": "usuarioId",
+              "value": "{{usuarioId}}",
+              "type": "text"
+            },
+            {
+              "key": "overwrite",
+              "value": "true",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/ventas/import",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "ventas",
+            "import"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "nuevoNombre",
+      "value": "Nuevo"
+    },
+    {
+      "key": "nuevoApellido",
+      "value": "Cliente"
+    },
+    {
+      "key": "nuevoEmail",
+      "value": "nuevo.cliente@avanza.com"
+    },
+    {
+      "key": "nuevoPassword",
+      "value": "Cliente123"
+    },
+    {
+      "key": "email",
+      "value": "{{nuevoEmail}}"
+    },
+    {
+      "key": "password",
+      "value": "{{nuevoPassword}}"
+    },
+    {
+      "key": "dnitFile",
+      "value": "C:/ruta/a/tu/dnit.xlsx"
+    },
+    {
+      "key": "ventasFile",
+      "value": "C:/ruta/a/tu/ventas.csv"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "usuarioId",
+      "value": ""
+    }
+  ]
+}
