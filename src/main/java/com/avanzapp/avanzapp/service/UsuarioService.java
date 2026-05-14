@@ -27,12 +27,13 @@ public class UsuarioService implements UserDetailsService {
 
     // Autenticación para Spring Security
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con email: " + email));
+    public UserDetails loadUserByUsername(String cedula) throws UsernameNotFoundException {
+        System.out.println("En Usuario Service:"+cedula);
+        Usuario usuario = usuarioRepository.findByCedula(cedula)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con cedula: " + cedula));
 
         return new org.springframework.security.core.userdetails.User(
-                usuario.getEmail(),
+                usuario.getCedula(),
                 usuario.getPassword(),
                 List.of(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().toUpperCase()))
         );
@@ -75,8 +76,9 @@ public class UsuarioService implements UserDetailsService {
     }
 
     // Validar credenciales para login
-    public Usuario validarCredenciales(String email, String password) {
-        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
+    public Usuario validarCredenciales(String cedula, String password) {
+        System.out.println("Cedula: "+cedula);
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByCedula(cedula);
 
         if (usuarioOpt.isPresent()) {
             Usuario usuario = usuarioOpt.get();
@@ -88,9 +90,9 @@ public class UsuarioService implements UserDetailsService {
     }
 
 
-    public UserDTO obtenerDTOporEmail(String email) {
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con email: " + email));
+    public UserDTO obtenerDTOporCedula(String cedula) {
+        Usuario usuario = usuarioRepository.findByCedula(cedula)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con cedula: " + cedula));
 
         return new UserDTO(
                 usuario.getId(),
@@ -98,7 +100,14 @@ public class UsuarioService implements UserDetailsService {
                 usuario.getApellido(),
                 usuario.getEmail(),
                 usuario.getTelefono(),
-                usuario.getUbicacion()
+                usuario.getUbicacion(),
+                usuario.getCedula()
         );
     }
+    public Usuario obtenerPorCedula(String cedula) {
+        return usuarioRepository.findByCedula(cedula)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("Usuario no encontrado con cedula: " + cedula));
+    }
+
 }

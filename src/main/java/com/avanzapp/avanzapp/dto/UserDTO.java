@@ -7,10 +7,11 @@ public class UserDTO {
     private String email;
     private String telefono;
     private String ubicacion;
+    private String cedula;
 
     // Getters y Setters
 
-    public UserDTO(Long id, String nombre, String apellido, String email, String telefono, String ubicacion) {
+    public UserDTO(Long id, String nombre, String apellido, String email, String telefono, String ubicacion, String cedula) {
         this.id = id;
         this.nombre = nombre;
         this.apellido = apellido;
@@ -67,6 +68,14 @@ public class UserDTO {
         this.ubicacion = ubicacion;
     }
 
+    public String getCedula() {
+        return cedula;
+    }
+
+    public void setCedula(String cedula) {
+        this.cedula = cedula;
+    }
+
     @Override
     public String toString() {
         return "UserDTO{" +
@@ -76,6 +85,7 @@ public class UserDTO {
                 ", email='" + email + '\'' +
                 ", telefono='" + telefono + '\'' +
                 ", ubicacion='" + ubicacion + '\'' +
+                ", cedula='"+ cedula + + '\'' +
                 '}';
     }
 }

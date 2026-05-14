@@ -1,6 +1,7 @@
 package com.avanzapp.avanzapp.model;
 
 import jakarta.persistence.*;
+
 import java.math.BigDecimal;
 
 @Entity
@@ -17,57 +18,93 @@ public class DNITCompraDetalle {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Cabecera
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cabecera_id", nullable = false)
     private DNITCompraCabecera cabecera;
 
-    // Tipo de línea (IVA10, IVA5, EXENTA)
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_linea", length = 10, nullable = false)
-    private LineaTipo tipoLinea;
+    private LineaTipo tipoLinea;      // IVA10 | IVA5 | EXENTA
 
-    // Montos de esta partición
+    @Column(name = "tasa")
+    private Integer tasa;             // 10, 5 o 0
+
     @Column(name = "base", precision = 18, scale = 2)
-    private BigDecimal base = BigDecimal.ZERO;      // gravada para líneas con IVA
+    private BigDecimal base = BigDecimal.ZERO;
 
     @Column(name = "iva", precision = 18, scale = 2)
-    private BigDecimal iva = BigDecimal.ZERO;       // 0 para EXENTA
+    private BigDecimal iva = BigDecimal.ZERO;
 
     @Column(name = "exento", precision = 18, scale = 2)
-    private BigDecimal exento = BigDecimal.ZERO;    // solo usa EXENTA
+    private BigDecimal exento = BigDecimal.ZERO;
 
-    @Column(name = "tasa") // 10, 5, ó 0
-    private Integer tasa;
-
-    // Etiqueta/categoría proveniente del Excel (texto al final)
     @Column(name = "clasificacion", length = 150)
     private String clasificacion;
 
-    public DNITCompraDetalle() {}
+    public DNITCompraDetalle() {
+    }
 
-    // Getters & Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public DNITCompraCabecera getCabecera() { return cabecera; }
-    public void setCabecera(DNITCompraCabecera cabecera) { this.cabecera = cabecera; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public LineaTipo getTipoLinea() { return tipoLinea; }
-    public void setTipoLinea(LineaTipo tipoLinea) { this.tipoLinea = tipoLinea; }
+    public DNITCompraCabecera getCabecera() {
+        return cabecera;
+    }
 
-    public BigDecimal getBase() { return base; }
-    public void setBase(BigDecimal base) { this.base = base; }
+    public void setCabecera(DNITCompraCabecera cabecera) {
+        this.cabecera = cabecera;
+    }
 
-    public BigDecimal getIva() { return iva; }
-    public void setIva(BigDecimal iva) { this.iva = iva; }
+    public LineaTipo getTipoLinea() {
+        return tipoLinea;
+    }
 
-    public BigDecimal getExento() { return exento; }
-    public void setExento(BigDecimal exento) { this.exento = exento; }
+    public void setTipoLinea(LineaTipo tipoLinea) {
+        this.tipoLinea = tipoLinea;
+    }
 
-    public Integer getTasa() { return tasa; }
-    public void setTasa(Integer tasa) { this.tasa = tasa; }
+    public Integer getTasa() {
+        return tasa;
+    }
 
-    public String getClasificacion() { return clasificacion; }
-    public void setClasificacion(String clasificacion) { this.clasificacion = clasificacion; }
+    public void setTasa(Integer tasa) {
+        this.tasa = tasa;
+    }
+
+    public BigDecimal getBase() {
+        return base;
+    }
+
+    public void setBase(BigDecimal base) {
+        this.base = base;
+    }
+
+    public BigDecimal getIva() {
+        return iva;
+    }
+
+    public void setIva(BigDecimal iva) {
+        this.iva = iva;
+    }
+
+    public BigDecimal getExento() {
+        return exento;
+    }
+
+    public void setExento(BigDecimal exento) {
+        this.exento = exento;
+    }
+
+    public String getClasificacion() {
+        return clasificacion;
+    }
+
+    public void setClasificacion(String clasificacion) {
+        this.clasificacion = clasificacion;
+    }
 }

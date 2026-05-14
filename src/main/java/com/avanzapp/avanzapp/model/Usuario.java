@@ -17,6 +17,7 @@ public class Usuario {
     private String nombre;
     private String apellido;
     private String email;
+    private String cedula;
     private String telefono;
     private String documento;
 
@@ -212,5 +213,13 @@ public class Usuario {
 
     public void setUbicacion(String ubicacion) {
         this.ubicacion = ubicacion;
+    }
+
+    public String getCedula() {
+        return cedula;
+    }
+
+    public void setCedula(String cedula) {
+        this.cedula = cedula;
     }
 }

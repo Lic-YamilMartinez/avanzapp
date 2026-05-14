@@ -1,6 +1,7 @@
 package com.avanzapp.avanzapp.model;
 
 import jakarta.persistence.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -10,7 +11,7 @@ import java.util.List;
 @Table(
         name = "dnit_compra_cabecera",
         uniqueConstraints = @UniqueConstraint(
-                name = "uk_cabecera_usuario_periodo_nro",
+                name = "uk_dnit_compras_usuario_periodo_numero",
                 columnNames = {"usuario_id", "periodo_mes", "periodo_anio", "nro_comprobante"}
         )
 )
@@ -20,32 +21,32 @@ public class DNITCompraCabecera {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Relación con el cliente (usuario)
+    // ===== RELACIÓN CON USUARIO =====
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
-    // Proveedor
+    // ===== PROVEEDOR / COMPROBANTE =====
     @Column(name = "proveedor_ruc", length = 25)
     private String proveedorRuc;
 
     @Column(name = "proveedor_nombre", length = 200)
     private String proveedorNombre;
 
-    // Comprobante
-    @Column(name = "nro_comprobante", length = 60)
+    @Column(name = "nro_comprobante", length = 60, nullable = false)
     private String nroComprobante;
 
-    @Column(name = "tipo_comprobante", length = 20)
+    @Column(name = "tipo_comprobante", length = 50)
     private String tipoComprobante;
 
-    @Column(name = "condicion_operacion", length = 20)
+    @Column(name = "condicion_operacion", length = 30)
     private String condicionOperacion;
 
+    // ===== FECHAS / PERÍODO =====
     @Column(name = "fecha_emision")
     private LocalDate fechaEmision;
 
-    @Column(name = "periodo_emision", length = 7)   // mm/yyyy
+    @Column(name = "periodo_emision", length = 7) // MM/YYYY
     private String periodoEmision;
 
     @Column(name = "periodo_mes")
@@ -54,7 +55,7 @@ public class DNITCompraCabecera {
     @Column(name = "periodo_anio")
     private Integer periodoAnio;
 
-    // Totales originales del comprobante (como viene del Excel)
+    // ===== MONTOS =====
     @Column(name = "gravada_10", precision = 18, scale = 2)
     private BigDecimal gravada10 = BigDecimal.ZERO;
 
@@ -70,13 +71,13 @@ public class DNITCompraCabecera {
     @Column(name = "exenta", precision = 18, scale = 2)
     private BigDecimal exenta = BigDecimal.ZERO;
 
-    @Column(name = "total_comprobante", precision = 18, scale = 2)
-    private BigDecimal totalComprobante = BigDecimal.ZERO;
-
     @Column(name = "base_imponible", precision = 18, scale = 2)
     private BigDecimal baseImponible = BigDecimal.ZERO;
 
-    // Clasificaciones “texto” del layout
+    @Column(name = "total_comprobante", precision = 18, scale = 2)
+    private BigDecimal totalComprobante = BigDecimal.ZERO;
+
+    // ===== AFECTACIONES =====
     @Column(name = "afectacion_exento", length = 150)
     private String afectacionExento;
 
@@ -86,7 +87,7 @@ public class DNITCompraCabecera {
     @Column(name = "afectacion_grav5", length = 150)
     private String afectacionGrav5;
 
-    // Detalles (particiones IVA10/IVA5/EXENTA)
+    // ===== DETALLES =====
     @OneToMany(
             mappedBy = "cabecera",
             cascade = CascadeType.ALL,
@@ -94,81 +95,199 @@ public class DNITCompraCabecera {
     )
     private List<DNITCompraDetalle> detalles = new ArrayList<>();
 
-    public DNITCompraCabecera() {}
+    public DNITCompraCabecera() {
+    }
 
-    // Getters & Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    // ===== GETTERS / SETTERS =====
 
-    public Usuario getUsuario() { return usuario; }
-    public void setUsuario(Usuario usuario) { this.usuario = usuario; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getProveedorRuc() { return proveedorRuc; }
-    public void setProveedorRuc(String proveedorRuc) { this.proveedorRuc = proveedorRuc; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getProveedorNombre() { return proveedorNombre; }
-    public void setProveedorNombre(String proveedorNombre) { this.proveedorNombre = proveedorNombre; }
+    public Usuario getUsuario() {
+        return usuario;
+    }
 
-    public String getNroComprobante() { return nroComprobante; }
-    public void setNroComprobante(String nroComprobante) { this.nroComprobante = nroComprobante; }
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
+    }
 
-    public String getTipoComprobante() { return tipoComprobante; }
-    public void setTipoComprobante(String tipoComprobante) { this.tipoComprobante = tipoComprobante; }
+    public String getProveedorRuc() {
+        return proveedorRuc;
+    }
 
-    public String getCondicionOperacion() { return condicionOperacion; }
-    public void setCondicionOperacion(String condicionOperacion) { this.condicionOperacion = condicionOperacion; }
+    public void setProveedorRuc(String proveedorRuc) {
+        this.proveedorRuc = proveedorRuc;
+    }
 
-    public LocalDate getFechaEmision() { return fechaEmision; }
-    public void setFechaEmision(LocalDate fechaEmision) { this.fechaEmision = fechaEmision; }
+    public String getProveedorNombre() {
+        return proveedorNombre;
+    }
 
-    public String getPeriodoEmision() { return periodoEmision; }
-    public void setPeriodoEmision(String periodoEmision) { this.periodoEmision = periodoEmision; }
+    public void setProveedorNombre(String proveedorNombre) {
+        this.proveedorNombre = proveedorNombre;
+    }
 
-    public Integer getPeriodoMes() { return periodoMes; }
-    public void setPeriodoMes(Integer periodoMes) { this.periodoMes = periodoMes; }
+    public String getNroComprobante() {
+        return nroComprobante;
+    }
 
-    public Integer getPeriodoAnio() { return periodoAnio; }
-    public void setPeriodoAnio(Integer periodoAnio) { this.periodoAnio = periodoAnio; }
+    public void setNroComprobante(String nroComprobante) {
+        this.nroComprobante = nroComprobante;
+    }
 
-    public BigDecimal getGravada10() { return gravada10; }
-    public void setGravada10(BigDecimal gravada10) { this.gravada10 = gravada10; }
+    public String getTipoComprobante() {
+        return tipoComprobante;
+    }
 
-    public BigDecimal getGravada5() { return gravada5; }
-    public void setGravada5(BigDecimal gravada5) { this.gravada5 = gravada5; }
+    public void setTipoComprobante(String tipoComprobante) {
+        this.tipoComprobante = tipoComprobante;
+    }
 
-    public BigDecimal getIva10() { return iva10; }
-    public void setIva10(BigDecimal iva10) { this.iva10 = iva10; }
+    public String getCondicionOperacion() {
+        return condicionOperacion;
+    }
 
-    public BigDecimal getIva5() { return iva5; }
-    public void setIva5(BigDecimal iva5) { this.iva5 = iva5; }
+    public void setCondicionOperacion(String condicionOperacion) {
+        this.condicionOperacion = condicionOperacion;
+    }
 
-    public BigDecimal getExenta() { return exenta; }
-    public void setExenta(BigDecimal exenta) { this.exenta = exenta; }
+    public LocalDate getFechaEmision() {
+        return fechaEmision;
+    }
 
-    public BigDecimal getTotalComprobante() { return totalComprobante; }
-    public void setTotalComprobante(BigDecimal totalComprobante) { this.totalComprobante = totalComprobante; }
+    public void setFechaEmision(LocalDate fechaEmision) {
+        this.fechaEmision = fechaEmision;
+    }
 
-    public BigDecimal getBaseImponible() { return baseImponible; }
-    public void setBaseImponible(BigDecimal baseImponible) { this.baseImponible = baseImponible; }
+    public String getPeriodoEmision() {
+        return periodoEmision;
+    }
 
-    public String getAfectacionExento() { return afectacionExento; }
-    public void setAfectacionExento(String afectacionExento) { this.afectacionExento = afectacionExento; }
+    public void setPeriodoEmision(String periodoEmision) {
+        this.periodoEmision = periodoEmision;
+    }
 
-    public String getAfectacionGrav10() { return afectacionGrav10; }
-    public void setAfectacionGrav10(String afectacionGrav10) { this.afectacionGrav10 = afectacionGrav10; }
+    public Integer getPeriodoMes() {
+        return periodoMes;
+    }
 
-    public String getAfectacionGrav5() { return afectacionGrav5; }
-    public void setAfectacionGrav5(String afectacionGrav5) { this.afectacionGrav5 = afectacionGrav5; }
+    public void setPeriodoMes(Integer periodoMes) {
+        this.periodoMes = periodoMes;
+    }
 
-    public List<DNITCompraDetalle> getDetalles() { return detalles; }
-    public void setDetalles(List<DNITCompraDetalle> detalles) { this.detalles = detalles; }
+    public Integer getPeriodoAnio() {
+        return periodoAnio;
+    }
 
-    // helpers
+    public void setPeriodoAnio(Integer periodoAnio) {
+        this.periodoAnio = periodoAnio;
+    }
+
+    public BigDecimal getGravada10() {
+        return gravada10;
+    }
+
+    public void setGravada10(BigDecimal gravada10) {
+        this.gravada10 = gravada10;
+    }
+
+    public BigDecimal getGravada5() {
+        return gravada5;
+    }
+
+    public void setGravada5(BigDecimal gravada5) {
+        this.gravada5 = gravada5;
+    }
+
+    public BigDecimal getIva10() {
+        return iva10;
+    }
+
+    public void setIva10(BigDecimal iva10) {
+        this.iva10 = iva10;
+    }
+
+    public BigDecimal getIva5() {
+        return iva5;
+    }
+
+    public void setIva5(BigDecimal iva5) {
+        this.iva5 = iva5;
+    }
+
+    public BigDecimal getExenta() {
+        return exenta;
+    }
+
+    public void setExenta(BigDecimal exenta) {
+        this.exenta = exenta;
+    }
+
+    public BigDecimal getBaseImponible() {
+        return baseImponible;
+    }
+
+    public void setBaseImponible(BigDecimal baseImponible) {
+        this.baseImponible = baseImponible;
+    }
+
+    public BigDecimal getTotalComprobante() {
+        return totalComprobante;
+    }
+
+    public void setTotalComprobante(BigDecimal totalComprobante) {
+        this.totalComprobante = totalComprobante;
+    }
+
+    public String getAfectacionExento() {
+        return afectacionExento;
+    }
+
+    public void setAfectacionExento(String afectacionExento) {
+        this.afectacionExento = afectacionExento;
+    }
+
+    public String getAfectacionGrav10() {
+        return afectacionGrav10;
+    }
+
+    public void setAfectacionGrav10(String afectacionGrav10) {
+        this.afectacionGrav10 = afectacionGrav10;
+    }
+
+    public String getAfectacionGrav5() {
+        return afectacionGrav5;
+    }
+
+    public void setAfectacionGrav5(String afectacionGrav5) {
+        this.afectacionGrav5 = afectacionGrav5;
+    }
+
+    public List<DNITCompraDetalle> getDetalles() {
+        return detalles;
+    }
+
+    public void setDetalles(List<DNITCompraDetalle> detalles) {
+        this.detalles = detalles;
+    }
+
+    // ===== MÉTODO CLAVE PARA IMPORT =====
     public void clearAndAddDetalles(List<DNITCompraDetalle> nuevos) {
-        this.detalles.clear();
-        for (DNITCompraDetalle d : nuevos) {
-            d.setCabecera(this);
-            this.detalles.add(d);
+        this.detalles.clear(); // orphanRemoval = true → borra en BD
+
+        if (nuevos != null) {
+            for (DNITCompraDetalle d : nuevos) {
+                d.setCabecera(this);
+                this.detalles.add(d);
+            }
         }
     }
+
+
+
 }

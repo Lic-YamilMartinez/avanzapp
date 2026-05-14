@@ -21,6 +21,7 @@ public class UsuarioController {
 
     @Autowired
     public UsuarioController(UsuarioService usuarioService) {
+
         this.usuarioService = usuarioService;
     }
 
@@ -58,10 +59,12 @@ public class UsuarioController {
     @GetMapping("/me")
     public ResponseEntity<UserDTO> obtenerMisDatos(@AuthenticationPrincipal UserDetails userDetails) {
         if (userDetails == null) {
+            System.out.println("userDetails es nulo");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        String email = userDetails.getUsername();
-        UserDTO dto = usuarioService.obtenerDTOporEmail(email);
+        String cedula = userDetails.getUsername();
+        System.out.println("En usuarioController:"+cedula);
+        UserDTO dto = usuarioService.obtenerDTOporCedula(cedula);
         return ResponseEntity.ok(dto);
     }
 

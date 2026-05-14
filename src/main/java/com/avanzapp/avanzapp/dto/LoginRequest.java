@@ -2,14 +2,14 @@
 package com.avanzapp.avanzapp.dto;
 
 public class LoginRequest {
-    private String email;
+    private String cedula;
     private String password;
 
     public LoginRequest() {
     }
 
-    public LoginRequest(String email, String password) {
-        this.email = email;
+    public LoginRequest(String cedula, String password) {
+        this.cedula = cedula;
         this.password = password;
     }
     public LoginRequest(String password) {
@@ -18,12 +18,12 @@ public class LoginRequest {
 
     // Getters y setters
 
-    public String getEmail() {
-        return email;
+    public String getCedula() {
+        return cedula;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setCedula(String email) {
+        this.cedula = email;
     }
     public String getPassword() {
         return password;

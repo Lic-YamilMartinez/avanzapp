@@ -5,7 +5,7 @@ import com.avanzapp.avanzapp.dto.ImportResultDTO;
 import com.avanzapp.avanzapp.mapper.DNITCompraMapper;
 import com.avanzapp.avanzapp.model.DNITCompraCabecera;
 import com.avanzapp.avanzapp.repository.DNITCompraCabeceraRepository;
-import com.avanzapp.avanzapp.service.DNITImportService;
+import com.avanzapp.avanzapp.service.DNITComprasImportService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,13 +18,13 @@ import java.util.Map;
 @RestController
 @RequestMapping("/dnit")
 @CrossOrigin(origins = "*")
-public class DNITController {
+public class DNITComprasController {
 
     private final DNITCompraCabeceraRepository cabeceraRepo;
-    private final DNITImportService importService;
+    private final DNITComprasImportService importService;
 
-    public DNITController(DNITCompraCabeceraRepository cabeceraRepo,
-                          DNITImportService importService) {
+    public DNITComprasController(DNITCompraCabeceraRepository cabeceraRepo,
+                                 DNITComprasImportService importService) {
         this.cabeceraRepo = cabeceraRepo;
         this.importService = importService;
     }

@@ -1,11 +1,12 @@
 server:
   port: ${SERVER_PORT:8080}
+  forward-headers-strategy: framework
 
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/avanzadb}
-    username: ${SPRING_DATASOURCE_USERNAME:avanzapp}
-    password: ${SPRING_DATASOURCE_PASSWORD:avanzapp}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/avanzapp}
+    username: ${SPRING_DATASOURCE_USERNAME:avanzauser}
+    password: ${SPRING_DATASOURCE_PASSWORD:123456}
     driver-class-name: org.postgresql.Driver
   jpa:
     open-in-view: false
@@ -26,3 +27,8 @@ logging:
   level:
     root: INFO
     org.hibernate.SQL: WARN
+
+app:
+  storage:
+    pdf-dir: ./storage/pdfs
+

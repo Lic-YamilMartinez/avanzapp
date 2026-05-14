@@ -7,4 +7,5 @@ import java.util.Optional;
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     // Ya podés usar métodos como findAll(), findById(), save(), delete(), etc.
     Optional<Usuario> findByEmail(String email);
+    Optional<Usuario> findByCedula(String cedula);
 }

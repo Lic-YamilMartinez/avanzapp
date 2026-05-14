@@ -20,12 +20,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
-public class DNITImportService {
+public class DNITComprasImportService {
 
     private final DNITCompraCabeceraRepository cabeceraRepo;
     private final UsuarioRepository usuarioRepository;
 
-    public DNITImportService(DNITCompraCabeceraRepository cabeceraRepo, UsuarioRepository usuarioRepository) {
+    public DNITComprasImportService(DNITCompraCabeceraRepository cabeceraRepo, UsuarioRepository usuarioRepository) {
         this.cabeceraRepo = cabeceraRepo;
         this.usuarioRepository = usuarioRepository;
     }
@@ -48,18 +48,30 @@ public class DNITImportService {
 
             if (overwrite) {
                 var existentes = cabeceraRepo.findByUsuarioIdAndPeriodoMesAndPeriodoAnio(usuarioId, periodoMes, periodoAnio);
-                System.out.printf("[DNIT-IMPORT] overwrite=true → eliminando %d cabeceras %02d/%d (detalles por cascade)%n",
+                System.out.printf("[DNIT-COMPRAS] overwrite=true → eliminando %d cabeceras %02d/%d (detalles por cascade)%n",
                         existentes.size(), periodoMes, periodoAnio);
                 cabeceraRepo.deleteAll(existentes);
             }
 
             int headerRowIdx = encontrarFilaEncabezado(sheet);
-            if (headerRowIdx < 0) throw new RuntimeException("No se encontró la fila de encabezados (columna 'DIA').");
+            if (headerRowIdx < 0) {
+                throw new RuntimeException("No se encontró la fila de encabezados (columna 'DIA').");
+            }
 
-            Map<String, Integer> col = mapearColumnasNormalizado(sheet.getRow(headerRowIdx));
+            Row header = sheet.getRow(headerRowIdx);
+            Map<String, Integer> col = mapearColumnasNormalizado(header);
 
+            // === columnas principales ===
             int idxDia    = getIdx(col, "DIA");
-            int idxDocNro = getIdx(col, "DOCUMENTO_NRO","DOCUMENTO_NO","DOCUMENTO_Nº","DOC_NRO","DOCUMENTO_NRO.");
+            int idxDocNro = getIdx(col,
+                    "DOCUMENTO_NRO","DOCUMENTO_NO","DOCUMENTO_Nº","DOC_NRO","DOCUMENTO_NRO."
+            );
+            if (idxDocNro < 0) {
+                throw new RuntimeException(
+                        "No se encontró la columna de número de comprobante (DOCUMENTO NRO / DOC_NRO)."
+                );
+            }
+
             int idxRSoc   = getIdx(col, "R_SOCIAL_APELLIDO_NOMBRE","RAZON_SOCIAL","R_SOCIAL_APELLIDO__NOMBRE");
             int idxRuc    = getIdx(col, "RUC");
             int idxTipoC  = getIdx(col, "T_COMP","TIPO_COMPROBANTE","TCOMP","T_COMP.");
@@ -79,26 +91,44 @@ public class DNITImportService {
 
             int insertados = 0, actualizados = 0, ignorados = 0, leidas = 0;
 
+            // Recorremos filas de detalle:
             for (int r = headerRowIdx + 1; r <= sheet.getLastRowNum(); r++) {
                 Row row = sheet.getRow(r);
                 if (row == null) continue;
+
+                // === REGLA CLAVE: cortar cuando ya no haya DOCUMENTO NRO ===
+                String rawNro = readString(row, idxDocNro);
+                String nro = normalizarNro(rawNro);
+                if (nro == null || nro.isBlank()) {
+                    // A partir de aquí el reporte son totales / basura para nuestro módulo
+                    System.out.printf("[DNIT-COMPRAS] Corte en fila %d: DOCUMENTO NRO vacío. Fin de datos útiles.%n", r);
+                    break;
+                }
+
                 leidas++;
 
                 Integer dia = readInteger(row, idxDia);
                 String proveedor = readString(row, idxRSoc);
                 BigDecimal total = readMoney(row, idxTotal);
 
-                boolean vacia = (dia == null) && (proveedor == null || proveedor.isBlank()) && isZeroOrNull(total);
-                if (vacia) { ignorados++; continue; }
-
-                String nro = normalizarNro(readString(row, idxDocNro));
+                boolean vacia = (dia == null) &&
+                        (proveedor == null || proveedor.isBlank()) &&
+                        isZeroOrNull(total);
+                if (vacia) {
+                    ignorados++;
+                    continue;
+                }
 
                 DNITCompraCabecera cab = cabeceraRepo
-                        .findFirstByUsuarioIdAndPeriodoMesAndPeriodoAnioAndNroComprobante(usuarioId, periodoMes, periodoAnio, nro)
+                        .findFirstByUsuarioIdAndPeriodoMesAndPeriodoAnioAndNroComprobante(
+                                usuarioId, periodoMes, periodoAnio, nro
+                        )
                         .orElse(null);
 
                 boolean esNueva = (cab == null);
-                if (cab == null) cab = new DNITCompraCabecera();
+                if (cab == null) {
+                    cab = new DNITCompraCabecera();
+                }
 
                 // ---- Cabecera ----
                 cab.setUsuario(usuario);
@@ -177,14 +207,14 @@ public class DNITImportService {
                 if (esNueva) insertados++; else actualizados++;
             }
 
-            System.out.printf("[DNIT-IMPORT] Resultado usuario=%d periodo=%02d/%d → Leídas=%d, Insertadas=%d, Actualizadas=%d, Ignoradas=%d%n",
+            System.out.printf("[DNIT-COMPRAS] Resultado usuario=%d periodo=%02d/%d → Leídas=%d, Insertadas=%d, Actualizadas=%d, Ignoradas=%d%n",
                     usuarioId, periodoMes, periodoAnio, leidas, insertados, actualizados, ignorados);
 
             return new ImportResultDTO(leidas, insertados, actualizados, ignorados, periodoMes, periodoAnio);
         }
     }
 
-    // ================= Helpers (los mismos que ya tenías, resumidos) =================
+    // ================= Helpers =================
 
     private static int encontrarFilaEncabezado(Sheet sheet) {
         for (int r = 0; r <= Math.min(sheet.getLastRowNum(), 60); r++) {
@@ -317,15 +347,11 @@ public class DNITImportService {
                 .replace(".", "")
                 .replace(",", ".")
                 .trim();
+        if (v.isEmpty()) return BigDecimal.ZERO;
         try { return new BigDecimal(v); } catch (Exception e) { return BigDecimal.ZERO; }
     }
 
-    // ====== Detector de período (usa la versión robusta que ya te pasé; por brevedad va la variante compacta) ======
     private static YearMonth detectarPeriodoObligatorio(Sheet sheet, String filename) {
-        // (Tu detector robusto que ya funcionó: MM/YYYY, MMYYYY, MES ENERO / AÑO: 2025 en celdas separadas, filename, fechas…)
-        // Para mantener foco en la partición, no repito todo aquí: conserva el más reciente que ya probaste.
-        // Si necesitas, te reenvío el detector largo otra vez.
-        // Placeholder mínimo:
         int top = Math.min(sheet.getLastRowNum(), 80);
         Pattern pMes = Pattern.compile("MES\\s*:?\\s*([A-ZÁÉÍÓÚÑ]{3,})", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
         Pattern pAnio= Pattern.compile("A[NÑ]O\\s*:?\\s*(20\\d{2})", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);

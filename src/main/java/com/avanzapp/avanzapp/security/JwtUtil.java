@@ -31,6 +31,7 @@ public class JwtUtil {
 
     // Extrae el username del token
     public String extractUsername(String token) {
+
         return parseClaims(token).getBody().getSubject();
     }
 
