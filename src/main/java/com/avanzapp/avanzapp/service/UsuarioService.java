@@ -77,11 +77,17 @@ public class UsuarioService implements UserDetailsService {
 
     // Validar credenciales para login
     public Usuario validarCredenciales(String cedula, String password) {
+        System.out.println("HASH 1234 = " + passwordEncoder.encode("1234"));
         System.out.println("Cedula: "+cedula);
         Optional<Usuario> usuarioOpt = usuarioRepository.findByCedula(cedula);
 
         if (usuarioOpt.isPresent()) {
             Usuario usuario = usuarioOpt.get();
+
+            System.out.println("Usuario encontrado: " + usuario.getCedula());
+            System.out.println("Password DB: " + usuario.getPassword());
+            System.out.println("Password match: " + passwordEncoder.matches(password, usuario.getPassword()));
+
             if (passwordEncoder.matches(password, usuario.getPassword())) {
                 return usuario;
             }

@@ -1,37 +1,41 @@
 services:
-  app:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    container_name: avanzapp
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/avanzadb
-      SPRING_DATASOURCE_USERNAME: avanzapp
-      SPRING_DATASOURCE_PASSWORD: avanzapp
-      SPRING_JPA_HIBERNATE_DDL_AUTO: none
-      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
-    ports:
-      - "8080:8080"
-    depends_on:
-      - db
-
   db:
     image: postgres:16-alpine
     container_name: avanzapp-postgres
+    restart: always
     environment:
       POSTGRES_DB: avanzadb
       POSTGRES_USER: avanzapp
       POSTGRES_PASSWORD: avanzapp
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U avanzapp -d avanzadb"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 15s
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: avanzapp
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/avanzadb
+      SPRING_DATASOURCE_USERNAME: avanzapp
+      SPRING_DATASOURCE_PASSWORD: avanzapp
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:
