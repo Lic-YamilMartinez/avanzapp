@@ -28,7 +28,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // 👇 Para que el 401/403 no venga vacío
+                // Para que el 401/403 no venga vacío
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((req, res, e) -> {
                             res.setStatus(401);
@@ -49,7 +49,14 @@ public class SecurityConfig {
                         // Público
                         .requestMatchers("/auth/**").permitAll()
 
-                        // ✅ PDF público (IMPORTA EL ORDEN: esto debe ir ANTES de /api/pdfs/**)
+                        // Datos propios del usuario autenticado
+                        // IMPORTA EL ORDEN: debe ir antes de /usuarios/**
+                        .requestMatchers("/usuarios/me").authenticated()
+
+                        // Gestión de usuarios: solo ADMIN
+                        .requestMatchers("/usuarios/**").hasRole("ADMIN")
+
+                        // PDF público (IMPORTA EL ORDEN: esto debe ir ANTES de /api/pdfs/**)
                         .requestMatchers("/api/pdfs/public/**").permitAll()
 
                         // PDFs privados (CLIENT y ADMIN)
@@ -74,7 +81,7 @@ public class SecurityConfig {
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
 
-        // ⚠️ Si vas a dejar allowCredentials=true, NO uses setAllowedOrigins("*")
+        // Si vas a dejar allowCredentials=true, NO uses setAllowedOrigins("*")
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
