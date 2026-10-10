@@ -6,7 +6,7 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/avanzadb}
     username: ${SPRING_DATASOURCE_USERNAME:avanzapp}
-    password: ${SPRING_DATASOURCE_PASSWORD:avanzapp}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: org.postgresql.Driver
   jpa:
     open-in-view: false
@@ -29,6 +29,8 @@ logging:
     org.hibernate.SQL: WARN
 
 app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: ${JWT_EXPIRATION_MS:36000000}
   storage:
-    pdf-dir: ./storage/pdfs
-
+    pdf-dir: ${PDF_STORAGE_DIR:./storage/pdfs}
