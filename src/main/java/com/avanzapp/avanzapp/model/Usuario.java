@@ -1,5 +1,6 @@
 package com.avanzapp.avanzapp.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -38,6 +39,8 @@ public class Usuario {
     private LocalDateTime ultimaSesion;
 
     private Date fechaNacimiento;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     private String ubicacion;

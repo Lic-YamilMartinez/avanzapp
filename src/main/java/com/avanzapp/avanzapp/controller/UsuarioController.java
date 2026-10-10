@@ -21,54 +21,51 @@ public class UsuarioController {
 
     @Autowired
     public UsuarioController(UsuarioService usuarioService) {
-
         this.usuarioService = usuarioService;
     }
 
-    // 🔹 Obtener todos los usuarios
+    // Obtener todos los usuarios
     @GetMapping
     public List<Usuario> obtenerTodos() {
         return usuarioService.obtenerTodos();
     }
 
-    // 🔹 Obtener un usuario por ID
+    // Obtener un usuario por ID
     @GetMapping("/{id}")
     public Usuario obtenerPorId(@PathVariable Long id) {
         return usuarioService.obtenerPorId(id);
     }
 
-    // 🔹 Crear nuevo usuario
+    // Crear nuevo usuario
     @PostMapping
     public Usuario crearUsuario(@RequestBody Usuario usuario) {
         return usuarioService.guardar(usuario);
     }
 
-    // 🔹 Actualizar usuario existente
+    // Actualizar usuario existente
     @PutMapping("/{id}")
     public Usuario actualizarUsuario(@PathVariable Long id, @RequestBody Usuario usuario) {
         return usuarioService.actualizar(id, usuario);
     }
 
-    // 🔹 Eliminar usuario por ID
+    // Eliminar usuario por ID
     @DeleteMapping("/{id}")
     public void eliminarUsuario(@PathVariable Long id) {
         usuarioService.eliminar(id);
     }
 
-    // 🔹 Obtener los datos del usuario logueado (desde el JWT)
+    // Obtener los datos del usuario logueado (desde el JWT)
     @GetMapping("/me")
     public ResponseEntity<UserDTO> obtenerMisDatos(@AuthenticationPrincipal UserDetails userDetails) {
         if (userDetails == null) {
-            System.out.println("userDetails es nulo");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         String cedula = userDetails.getUsername();
-        System.out.println("En usuarioController:"+cedula);
         UserDTO dto = usuarioService.obtenerDTOporCedula(cedula);
         return ResponseEntity.ok(dto);
     }
 
-    // 🔹 Nuevo endpoint: Obtener solo los clientes (usuarios con rol CLIENT)
+    // Obtener solo los clientes (usuarios con rol CLIENT)
     @GetMapping("/clientes")
     public ResponseEntity<List<Usuario>> obtenerClientes() {
         List<Usuario> clientes = usuarioService.obtenerTodos()
