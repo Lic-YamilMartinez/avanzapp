@@ -4,13 +4,13 @@ services:
     container_name: avanzapp-postgres
     restart: always
     environment:
-      POSTGRES_DB: avanzadb
-      POSTGRES_USER: avanzapp
-      POSTGRES_PASSWORD: avanzapp
+      POSTGRES_DB: ${POSTGRES_DB:-avanzadb}
+      POSTGRES_USER: ${POSTGRES_USER:-avanzapp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U avanzapp -d avanzadb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-avanzapp} -d ${POSTGRES_DB:-avanzadb}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -26,16 +26,22 @@ services:
     container_name: avanzapp
     restart: always
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/avanzadb
-      SPRING_DATASOURCE_USERNAME: avanzapp
-      SPRING_DATASOURCE_PASSWORD: avanzapp
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-avanzadb}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-avanzapp}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-36000000}
+      PDF_STORAGE_DIR: /app/storage/pdfs
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - pdf_data:/app/storage/pdfs
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
   postgres_data:
+  pdf_data:
