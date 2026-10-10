@@ -31,8 +31,6 @@ public class AuthController {
 
         String password = request.getPassword() == null ? "" : request.getPassword().trim();
 
-        System.out.println("LOGIN -> cedula recibida: [" + request.getCedula() + "] normalizada: [" + cedula + "]");
-
         // 2) Validar credenciales
         Usuario usuario = usuarioService.validarCredenciales(cedula, password);
 
@@ -43,8 +41,6 @@ public class AuthController {
                     "message", "Cédula o contraseña incorrecta"
             ));
         }
-
-        System.out.println("LOGIN OK -> usuario cedula: " + usuario.getCedula() + " rol: " + usuario.getRol());
 
         // 4) Token
         String token = jwtUtil.generateToken(usuario.getCedula());
