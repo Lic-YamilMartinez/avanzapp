@@ -52,6 +52,18 @@ public class DNITCompraCabecera {
     @Column(name = "observacion", length = 1000)
     private String observacion;
 
+    @Column(name = "observacion_normalizada", length = 500)
+    private String observacionNormalizada;
+
+    @Column(name = "observacion_categoria", length = 150)
+    private String observacionCategoria;
+
+    @Column(name = "observacion_normalizacion_metodo", length = 30)
+    private String observacionNormalizacionMetodo;
+
+    @Column(name = "observacion_normalizacion_confianza", precision = 5, scale = 4)
+    private BigDecimal observacionNormalizacionConfianza;
+
     // ===== FECHAS / PERÍODO =====
     @Column(name = "fecha_emision")
     private LocalDate fechaEmision;
@@ -216,6 +228,38 @@ public class DNITCompraCabecera {
 
     public void setObservacion(String observacion) {
         this.observacion = observacion;
+    }
+
+    public String getObservacionNormalizada() {
+        return observacionNormalizada;
+    }
+
+    public void setObservacionNormalizada(String observacionNormalizada) {
+        this.observacionNormalizada = observacionNormalizada;
+    }
+
+    public String getObservacionCategoria() {
+        return observacionCategoria;
+    }
+
+    public void setObservacionCategoria(String observacionCategoria) {
+        this.observacionCategoria = observacionCategoria;
+    }
+
+    public String getObservacionNormalizacionMetodo() {
+        return observacionNormalizacionMetodo;
+    }
+
+    public void setObservacionNormalizacionMetodo(String observacionNormalizacionMetodo) {
+        this.observacionNormalizacionMetodo = observacionNormalizacionMetodo;
+    }
+
+    public BigDecimal getObservacionNormalizacionConfianza() {
+        return observacionNormalizacionConfianza;
+    }
+
+    public void setObservacionNormalizacionConfianza(BigDecimal observacionNormalizacionConfianza) {
+        this.observacionNormalizacionConfianza = observacionNormalizacionConfianza;
     }
 
     public LocalDate getFechaEmision() {
