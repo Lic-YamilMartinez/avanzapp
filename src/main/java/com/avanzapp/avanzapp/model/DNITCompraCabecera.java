@@ -8,13 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(
-        name = "dnit_compra_cabecera",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_dnit_compras_usuario_periodo_numero",
-                columnNames = {"usuario_id", "periodo_mes", "periodo_anio", "nro_comprobante"}
-        )
-)
+@Table(name = "dnit_compra_cabecera")
 public class DNITCompraCabecera {
 
     @Id
@@ -25,6 +19,10 @@ public class DNITCompraCabecera {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fuente", length = 10)
+    private FuenteCompra fuente = FuenteCompra.IVA;
 
     // ===== PROVEEDOR / COMPROBANTE =====
     @Column(name = "proveedor_ruc", length = 25)
@@ -41,6 +39,18 @@ public class DNITCompraCabecera {
 
     @Column(name = "condicion_operacion", length = 30)
     private String condicionOperacion;
+
+    @Column(name = "timbrado", length = 30)
+    private String timbrado;
+
+    @Column(name = "ruc_titular", length = 25)
+    private String rucTitular;
+
+    @Column(name = "rubro_gastos", length = 500)
+    private String rubroGastos;
+
+    @Column(name = "observacion", length = 1000)
+    private String observacion;
 
     // ===== FECHAS / PERÍODO =====
     @Column(name = "fecha_emision")
@@ -76,6 +86,18 @@ public class DNITCompraCabecera {
 
     @Column(name = "total_comprobante", precision = 18, scale = 2)
     private BigDecimal totalComprobante = BigDecimal.ZERO;
+
+    @Column(name = "monto_compra", precision = 18, scale = 2)
+    private BigDecimal montoCompra = BigDecimal.ZERO;
+
+    @Column(name = "monto_iva", precision = 18, scale = 2)
+    private BigDecimal montoIva = BigDecimal.ZERO;
+
+    @Column(name = "monto_pagado", precision = 18, scale = 2)
+    private BigDecimal montoPagado = BigDecimal.ZERO;
+
+    @Column(name = "gastos", precision = 18, scale = 2)
+    private BigDecimal gastos = BigDecimal.ZERO;
 
     // ===== AFECTACIONES =====
     @Column(name = "afectacion_exento", length = 150)
@@ -116,6 +138,14 @@ public class DNITCompraCabecera {
         this.usuario = usuario;
     }
 
+    public FuenteCompra getFuente() {
+        return fuente;
+    }
+
+    public void setFuente(FuenteCompra fuente) {
+        this.fuente = fuente;
+    }
+
     public String getProveedorRuc() {
         return proveedorRuc;
     }
@@ -154,6 +184,38 @@ public class DNITCompraCabecera {
 
     public void setCondicionOperacion(String condicionOperacion) {
         this.condicionOperacion = condicionOperacion;
+    }
+
+    public String getTimbrado() {
+        return timbrado;
+    }
+
+    public void setTimbrado(String timbrado) {
+        this.timbrado = timbrado;
+    }
+
+    public String getRucTitular() {
+        return rucTitular;
+    }
+
+    public void setRucTitular(String rucTitular) {
+        this.rucTitular = rucTitular;
+    }
+
+    public String getRubroGastos() {
+        return rubroGastos;
+    }
+
+    public void setRubroGastos(String rubroGastos) {
+        this.rubroGastos = rubroGastos;
+    }
+
+    public String getObservacion() {
+        return observacion;
+    }
+
+    public void setObservacion(String observacion) {
+        this.observacion = observacion;
     }
 
     public LocalDate getFechaEmision() {
@@ -242,6 +304,38 @@ public class DNITCompraCabecera {
 
     public void setTotalComprobante(BigDecimal totalComprobante) {
         this.totalComprobante = totalComprobante;
+    }
+
+    public BigDecimal getMontoCompra() {
+        return montoCompra;
+    }
+
+    public void setMontoCompra(BigDecimal montoCompra) {
+        this.montoCompra = montoCompra;
+    }
+
+    public BigDecimal getMontoIva() {
+        return montoIva;
+    }
+
+    public void setMontoIva(BigDecimal montoIva) {
+        this.montoIva = montoIva;
+    }
+
+    public BigDecimal getMontoPagado() {
+        return montoPagado;
+    }
+
+    public void setMontoPagado(BigDecimal montoPagado) {
+        this.montoPagado = montoPagado;
+    }
+
+    public BigDecimal getGastos() {
+        return gastos;
+    }
+
+    public void setGastos(BigDecimal gastos) {
+        this.gastos = gastos;
     }
 
     public String getAfectacionExento() {
