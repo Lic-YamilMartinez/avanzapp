@@ -36,6 +36,10 @@ public class DNITComprasSchemaMigration implements ApplicationRunner {
         jdbcTemplate.execute("ALTER TABLE dnit_compra_cabecera ADD COLUMN IF NOT EXISTS ruc_titular varchar(25)");
         jdbcTemplate.execute("ALTER TABLE dnit_compra_cabecera ADD COLUMN IF NOT EXISTS rubro_gastos varchar(500)");
         jdbcTemplate.execute("ALTER TABLE dnit_compra_cabecera ADD COLUMN IF NOT EXISTS observacion varchar(1000)");
+        jdbcTemplate.execute("ALTER TABLE dnit_compra_cabecera ADD COLUMN IF NOT EXISTS observacion_normalizada varchar(500)");
+        jdbcTemplate.execute("ALTER TABLE dnit_compra_cabecera ADD COLUMN IF NOT EXISTS observacion_categoria varchar(150)");
+        jdbcTemplate.execute("ALTER TABLE dnit_compra_cabecera ADD COLUMN IF NOT EXISTS observacion_normalizacion_metodo varchar(30)");
+        jdbcTemplate.execute("ALTER TABLE dnit_compra_cabecera ADD COLUMN IF NOT EXISTS observacion_normalizacion_confianza numeric(5,4)");
         jdbcTemplate.execute("ALTER TABLE dnit_compra_cabecera ADD COLUMN IF NOT EXISTS gastos numeric(18,2)");
 
         jdbcTemplate.execute("UPDATE dnit_compra_cabecera SET fuente = 'IVA' WHERE fuente IS NULL");
