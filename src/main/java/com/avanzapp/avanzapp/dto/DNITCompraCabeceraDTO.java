@@ -16,6 +16,10 @@ public record DNITCompraCabeceraDTO(
         String rucTitular,
         String rubroGastos,
         String observacion,
+        String observacionNormalizada,
+        String observacionCategoria,
+        String observacionNormalizacionMetodo,
+        BigDecimal observacionNormalizacionConfianza,
         String fechaEmision,     // yyyy-MM-dd
         String periodoEmision,   // mm/yyyy
         Integer periodoMes,
