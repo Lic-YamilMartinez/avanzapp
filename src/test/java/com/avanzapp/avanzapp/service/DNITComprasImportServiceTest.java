@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
@@ -33,6 +34,9 @@ class DNITComprasImportServiceTest {
 
     @Mock
     private UsuarioRepository usuarioRepository;
+
+    @Spy
+    private ObservacionIrpNormalizer observacionIrpNormalizer = new ObservacionIrpNormalizer();
 
     @InjectMocks
     private DNITComprasImportService service;
@@ -91,7 +95,7 @@ class DNITComprasImportServiceTest {
             factura.createCell(9).setCellValue(110000);
             factura.createCell(10).setCellValue("1810050-3");
             factura.createCell(11).setCellValue("1-Egresos directamente relacionados con la actividad gravada");
-            factura.createCell(12).setCellValue("Compra de prueba");
+            factura.createCell(12).setCellValue("Consumisiones");
             factura.createCell(13).setCellValue(100000);
 
             Row pago = sheet.createRow(8);
@@ -134,6 +138,10 @@ class DNITComprasImportServiceTest {
         assertEquals(LocalDate.of(2026, 11, 5), guardada.getFechaEmision());
         assertEquals("11/2026", guardada.getPeriodoEmision());
         assertEquals("1-Egresos directamente relacionados con la actividad gravada", guardada.getRubroGastos());
+        assertEquals("Consumisiones", guardada.getObservacion());
+        assertEquals("Consumición", guardada.getObservacionNormalizada());
+        assertEquals("Consumición", guardada.getObservacionCategoria());
+        assertEquals("REGLA", guardada.getObservacionNormalizacionMetodo());
         assertEquals(0, guardada.getTotalComprobante().compareTo(new java.math.BigDecimal("110000.0")));
     }
 }
