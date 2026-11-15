@@ -77,6 +77,12 @@ public class DNITComprasController {
             body.put("periodoAnio", rs.getPeriodoAnio());
             body.put("fuente", rs.getFuente());
             body.put("periodos", rs.getPeriodos());
+            if (rs.getPeriodos() != null && rs.getPeriodos().size() > 1) {
+                body.put(
+                        "advertencia",
+                        "El archivo contiene varios meses. Se importaron según la fecha de cada comprobante, pero el flujo recomendado en AvanzApp es mensual."
+                );
+            }
             body.put("insertadas", rs.getInsertadas());
             body.put("actualizadas", rs.getActualizadas());
             body.put("ignoradas", rs.getIgnoradas());
