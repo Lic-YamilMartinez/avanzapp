@@ -21,11 +21,14 @@ public class ReportesDNITService {
 
     private final DNITCompraCabeceraRepository comprasRepo;
     private final DNITVentasCabeceraRepository ventasRepo;
+    private final DNITComprasFuenteSelector fuenteSelector;
 
     public ReportesDNITService(DNITCompraCabeceraRepository comprasRepo,
-                               DNITVentasCabeceraRepository ventasRepo) {
+                               DNITVentasCabeceraRepository ventasRepo,
+                               DNITComprasFuenteSelector fuenteSelector) {
         this.comprasRepo = comprasRepo;
         this.ventasRepo = ventasRepo;
+        this.fuenteSelector = fuenteSelector;
     }
 
     public DNITReporteResponseDTO obtenerReporteDnit(Long usuarioId, YearMonth periodo) {
@@ -44,6 +47,8 @@ public class ReportesDNITService {
             ventas  = ventasRepo.findByUsuarioId(usuarioId);
         }
 
+        compras = fuenteSelector.seleccionar(compras);
+
         // 🔹 Acá estamos todavía dentro de la transacción,
         // así que podemos tocar `detalles` sin LazyInitializationException
         List<DNITCompraCabeceraDTO> comprasDTO = compras.stream()
@@ -56,4 +61,5 @@ public class ReportesDNITService {
 
         return new DNITReporteResponseDTO(comprasDTO, ventasDTO);
     }
+
 }
