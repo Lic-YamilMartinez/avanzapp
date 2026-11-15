@@ -1,6 +1,7 @@
 package com.avanzapp.avanzapp.repository;
 
 import com.avanzapp.avanzapp.model.DNITCompraCabecera;
+import com.avanzapp.avanzapp.model.FuenteCompra;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -25,6 +26,27 @@ public interface DNITCompraCabeceraRepository extends JpaRepository<DNITCompraCa
             Long usuarioId,
             Integer mes,
             Integer anio,
+            String nroComprobante
+    );
+
+    List<DNITCompraCabecera> findByUsuarioIdAndPeriodoMesAndPeriodoAnioAndFuente(
+            Long usuarioId,
+            Integer mes,
+            Integer anio,
+            FuenteCompra fuente
+    );
+
+    List<DNITCompraCabecera> findByUsuarioIdAndFuente(
+            Long usuarioId,
+            FuenteCompra fuente
+    );
+
+    Optional<DNITCompraCabecera> findFirstByUsuarioIdAndPeriodoMesAndPeriodoAnioAndFuenteAndProveedorRucAndNroComprobante(
+            Long usuarioId,
+            Integer mes,
+            Integer anio,
+            FuenteCompra fuente,
+            String proveedorRuc,
             String nroComprobante
     );
 
