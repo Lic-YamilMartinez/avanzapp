@@ -67,6 +67,8 @@ public class DNITComprasController {
             body.put("resumen", rs.resumen());
             body.put("periodoMes", rs.getPeriodoMes());
             body.put("periodoAnio", rs.getPeriodoAnio());
+            body.put("fuente", rs.getFuente());
+            body.put("periodos", rs.getPeriodos());
             body.put("insertadas", rs.getInsertadas());
             body.put("actualizadas", rs.getActualizadas());
             body.put("ignoradas", rs.getIgnoradas());
