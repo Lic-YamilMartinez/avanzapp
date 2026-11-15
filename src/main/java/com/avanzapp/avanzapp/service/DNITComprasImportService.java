@@ -31,11 +31,14 @@ public class DNITComprasImportService {
 
     private final DNITCompraCabeceraRepository cabeceraRepo;
     private final UsuarioRepository usuarioRepository;
+    private final ObservacionIrpNormalizer observacionIrpNormalizer;
 
     public DNITComprasImportService(DNITCompraCabeceraRepository cabeceraRepo,
-                                    UsuarioRepository usuarioRepository) {
+                                    UsuarioRepository usuarioRepository,
+                                    ObservacionIrpNormalizer observacionIrpNormalizer) {
         this.cabeceraRepo = cabeceraRepo;
         this.usuarioRepository = usuarioRepository;
+        this.observacionIrpNormalizer = observacionIrpNormalizer;
     }
 
     @Transactional
@@ -302,6 +305,10 @@ public class DNITComprasImportService {
                         : safe(montoCompra).add(safe(montoIva));
             }
 
+            String observacionOriginal = sanitizeTxt(readString(row, idxObservacion));
+            ObservacionIrpNormalizer.Resultado observacionNorm =
+                    observacionIrpNormalizer.normalizar(observacionOriginal);
+
             registros.add(new IrpRow(
                     fecha,
                     sanitizeTxt(readString(row, idxRucVendedor)),
@@ -315,7 +322,11 @@ public class DNITComprasImportService {
                     total,
                     sanitizeTxt(readString(row, idxRucTitular)),
                     sanitizeTxt(readString(row, idxRubroGastos)),
-                    sanitizeTxt(readString(row, idxObservacion)),
+                    observacionOriginal,
+                    observacionNorm.normalizada(),
+                    observacionNorm.categoria(),
+                    observacionNorm.metodo(),
+                    BigDecimal.valueOf(observacionNorm.confianza()),
                     readMoney(row, idxGastos)
             ));
         }
@@ -372,6 +383,10 @@ public class DNITComprasImportService {
             cab.setRucTitular(reg.rucTitular());
             cab.setRubroGastos(reg.rubroGastos());
             cab.setObservacion(reg.observacion());
+            cab.setObservacionNormalizada(reg.observacionNormalizada());
+            cab.setObservacionCategoria(reg.observacionCategoria());
+            cab.setObservacionNormalizacionMetodo(reg.observacionNormalizacionMetodo());
+            cab.setObservacionNormalizacionConfianza(reg.observacionNormalizacionConfianza());
 
             cab.setFechaEmision(reg.fecha());
             cab.setPeriodoMes(periodo.getMonthValue());
@@ -821,6 +836,10 @@ public class DNITComprasImportService {
             String rucTitular,
             String rubroGastos,
             String observacion,
+            String observacionNormalizada,
+            String observacionCategoria,
+            String observacionNormalizacionMetodo,
+            BigDecimal observacionNormalizacionConfianza,
             BigDecimal gastos
     ) {}
 }
