@@ -5,6 +5,7 @@ import com.avanzapp.avanzapp.dto.ImportResultDTO;
 import com.avanzapp.avanzapp.mapper.DNITCompraMapper;
 import com.avanzapp.avanzapp.model.DNITCompraCabecera;
 import com.avanzapp.avanzapp.repository.DNITCompraCabeceraRepository;
+import com.avanzapp.avanzapp.service.DNITComprasFuenteSelector;
 import com.avanzapp.avanzapp.service.DNITComprasImportService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,16 +23,21 @@ public class DNITComprasController {
 
     private final DNITCompraCabeceraRepository cabeceraRepo;
     private final DNITComprasImportService importService;
+    private final DNITComprasFuenteSelector fuenteSelector;
 
     public DNITComprasController(DNITCompraCabeceraRepository cabeceraRepo,
-                                 DNITComprasImportService importService) {
+                                 DNITComprasImportService importService,
+                                 DNITComprasFuenteSelector fuenteSelector) {
         this.cabeceraRepo = cabeceraRepo;
         this.importService = importService;
+        this.fuenteSelector = fuenteSelector;
     }
 
     @GetMapping(value = "/{usuarioId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<DNITCompraCabeceraDTO>> listar(@PathVariable Long usuarioId) {
-        List<DNITCompraCabecera> list = cabeceraRepo.findByUsuarioId(usuarioId);
+        List<DNITCompraCabecera> list = fuenteSelector.seleccionar(
+                cabeceraRepo.findByUsuarioId(usuarioId)
+        );
         return ResponseEntity.ok(list.stream().map(DNITCompraMapper::toDTO).toList());
     }
 
@@ -39,7 +45,9 @@ public class DNITComprasController {
     public ResponseEntity<List<DNITCompraCabeceraDTO>> listarPorPeriodo(
             @PathVariable Long usuarioId,
             @PathVariable String periodo) {
-        List<DNITCompraCabecera> list = cabeceraRepo.findByUsuarioIdAndPeriodoEmision(usuarioId, periodo);
+        List<DNITCompraCabecera> list = fuenteSelector.seleccionar(
+                cabeceraRepo.findByUsuarioIdAndPeriodoEmision(usuarioId, periodo)
+        );
         return ResponseEntity.ok(list.stream().map(DNITCompraMapper::toDTO).toList());
     }
 
