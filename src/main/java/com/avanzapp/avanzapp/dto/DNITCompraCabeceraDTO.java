@@ -6,11 +6,16 @@ import java.util.List;
 public record DNITCompraCabeceraDTO(
         Long id,
         Long usuarioId,
+        String fuente,
         String proveedorRuc,
         String proveedorNombre,
         String nroComprobante,
         String tipoComprobante,
         String condicionOperacion,
+        String timbrado,
+        String rucTitular,
+        String rubroGastos,
+        String observacion,
         String fechaEmision,     // yyyy-MM-dd
         String periodoEmision,   // mm/yyyy
         Integer periodoMes,
@@ -22,6 +27,10 @@ public record DNITCompraCabeceraDTO(
         BigDecimal exenta,
         BigDecimal totalComprobante,
         BigDecimal baseImponible,
+        BigDecimal montoCompra,
+        BigDecimal montoIva,
+        BigDecimal montoPagado,
+        BigDecimal gastos,
         String afectacionExento,
         String afectacionGrav10,
         String afectacionGrav5,
